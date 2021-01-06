@@ -1,4 +1,3 @@
-// ignore: avoid_web_libraries_in_flutter
 import 'dart:html';
 
 typedef void OnMessageCallback(dynamic msg);
@@ -20,18 +19,18 @@ class SimpleWebSocket {
     try {
       _socket = WebSocket(_url);
       _socket.onOpen.listen((e) {
-        onOpen?.call();
+        this?.onOpen();
       });
 
       _socket.onMessage.listen((e) {
-        onMessage?.call(e.data);
+        this?.onMessage(e.data);
       });
 
       _socket.onClose.listen((e) {
-        onClose?.call(e.code, e.reason);
+        this?.onClose(e.code, e.reason);
       });
     } catch (e) {
-      onClose?.call(500, e.toString());
+      this?.onClose(500, e.toString());
     }
   }
 
@@ -45,8 +44,6 @@ class SimpleWebSocket {
   }
 
   close() {
-    if (_socket != null) {
-      _socket.close();
-    }
+    if (_socket != null) _socket.close();
   }
 }

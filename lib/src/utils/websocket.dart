@@ -19,14 +19,14 @@ class SimpleWebSocket {
     try {
       //_socket = await WebSocket.connect(_url);
       _socket = await _connectForSelfSignedCert(_url);
-      onOpen?.call();
+      this?.onOpen();
       _socket.listen((data) {
-        onMessage?.call(data);
+        this?.onMessage(data);
       }, onDone: () {
-        onClose?.call(_socket.closeCode, _socket.closeReason);
+        this?.onClose(_socket.closeCode, _socket.closeReason);
       });
     } catch (e) {
-      onClose?.call(500, e.toString());
+      this.onClose(500, e.toString());
     }
   }
 
@@ -38,7 +38,8 @@ class SimpleWebSocket {
   }
 
   close() {
-    if (_socket != null) _socket.close();
+    if (_socket != null)
+      _socket.close();
   }
 
   Future<WebSocket> _connectForSelfSignedCert(url) async {
@@ -48,13 +49,11 @@ class SimpleWebSocket {
       HttpClient client = HttpClient(context: SecurityContext());
       client.badCertificateCallback =
           (X509Certificate cert, String host, int port) {
-        print(
-            'SimpleWebSocket: Allow self-signed certificate => $host:$port. ');
+        print('SimpleWebSocket: Allow self-signed certificate => $host:$port. ');
         return true;
       };
 
-      HttpClientRequest request =
-          await client.getUrl(Uri.parse(url)); // form the correct url here
+      HttpClientRequest request = await client.getUrl(Uri.parse(url)); // form the correct url here
       request.headers.add('Connection', 'Upgrade');
       request.headers.add('Upgrade', 'websocket');
       request.headers.add(
@@ -62,7 +61,6 @@ class SimpleWebSocket {
       request.headers.add('Sec-WebSocket-Key', key.toLowerCase());
 
       HttpClientResponse response = await request.close();
-      // ignore: close_sinks
       Socket socket = await response.detachSocket();
       var webSocket = WebSocket.fromUpgradedSocket(
         socket,

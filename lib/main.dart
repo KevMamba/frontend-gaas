@@ -80,8 +80,8 @@ class _MyAppState extends State<MyApp> {
               context,
               MaterialPageRoute(
                   builder: (BuildContext context) => _datachannel
-                      ? DataChannelSample(host: _server)
-                      : CallSample(host: _server)));
+                      ? DataChannelSample(ip: _server)
+                      : CallSample(ip: _server)));
         }
       }
     });
