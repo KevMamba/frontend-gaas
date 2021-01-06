@@ -1,19 +1,24 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'dart:core';
 import 'dart:async';
 import 'dart:typed_data';
 import 'signaling.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'dart:convert';
 
 class DataChannelSample extends StatefulWidget {
   static String tag = 'call_sample';
 
-  final String host;
+  final String ip;
 
-  DataChannelSample({Key key, @required this.host}) : super(key: key);
+  DataChannelSample({Key key, @required this.ip}) : super(key: key);
 
   @override
-  _DataChannelSampleState createState() => _DataChannelSampleState();
+  _DataChannelSampleState createState() =>
+      _DataChannelSampleState(serverIP: ip);
 }
 
 class _DataChannelSampleState extends State<DataChannelSample> {
@@ -21,21 +26,126 @@ class _DataChannelSampleState extends State<DataChannelSample> {
   List<dynamic> _peers;
   var _selfId;
   bool _inCalling = false;
+  final String serverIP;
   RTCDataChannel _dataChannel;
-  Session _session;
   Timer _timer;
   var _text = '';
-  // ignore: unused_element
-  _DataChannelSampleState({Key key});
+  _DataChannelSampleState({Key key, @required this.serverIP});
+  int sampleRate = 32768;
+  int blockSize = 4096;
+  FlutterSoundPlayer _mPlayer = FlutterSoundPlayer();
+  bool _mPlayerIsInited = false;
+  Uint8List bm;
+  Uint8List bin;
+  var jsonbody;
+  int width;
+  int height;
+  ZLibDecoder decoder = new ZLibDecoder();
+  FocusNode focusNode = FocusNode();
 
   @override
   initState() {
     super.initState();
+    _mPlayer.openAudioSession().then((value) {
+      setState(() {
+        _mPlayerIsInited = true;
+        initBitmap(720, 480);
+      });
+    });
     _connect();
+  }
+
+  void initBitmap(int jsonwidth, int jsonheight) {
+    width = jsonwidth;
+    height = jsonheight;
+    int filesize = width * height * 3 + 54;
+    int j;
+    bm = new Uint8List(filesize);
+    bm[0] = 'B'.codeUnitAt(0);
+    bm[1] = 'M'.codeUnitAt(0);
+
+    // File size
+    String sizeStr = filesize.toRadixString(16).padLeft(8, '0');
+    j = 8;
+    for (int i = 2; i < 6; i++) {
+      bm[i] = int.parse(sizeStr.substring(j - 2, j), radix: 16);
+      j = j - 2;
+    }
+
+    // reserved field (in hex. 00 00 00 00)
+    for (int i = 6; i < 10; i++) bm[i] = 0;
+
+    // offset of pixel data inside the image
+    //The offset, i.e. starting address, of the byte where the bitmap data
+    // (pixel array) can be found.
+    bm[10] = 0x36;
+    for (int i = 11; i < 14; i++) bm[i] = 0;
+
+    // -- BITMAP HEADER -- //
+
+    // header size
+    bm[14] = 40;
+    for (int i = 15; i < 18; i++) bm[i] = 0;
+
+    // width of the image
+    String widthStr = width.toRadixString(16).padLeft(8, '0');
+    j = 8;
+    for (int i = 18; i < 22; i++) {
+      bm[i] = int.parse(widthStr.substring(j - 2, j), radix: 16);
+      j = j - 2;
+    }
+
+    // height of the image
+    String heightStr = height.toRadixString(16).padLeft(8, '0');
+    j = 8;
+    for (int i = 22; i < 26; i++) {
+      bm[i] = int.parse(heightStr.substring(j - 2, j), radix: 16);
+      j = j - 2;
+    }
+
+    // no of color planes, must be 1
+    bm[26] = 1;
+    bm[27] = 0;
+
+    // number of bits per pixel
+    bm[28] = 24; // 1 byte
+    bm[29] = 0;
+
+    // compression method (no compression here)
+    for (int i = 30; i < 34; i++) bm[i] = 0;
+
+    // raw bitmap data size, all zeros
+    for (int i = 34; i < 38; i++) bm[i] = 0;
+
+    // horizontal resolution of the image - pixels per meter (3780)
+    bm[38] = 0xc4;
+    bm[39] = 0x0e;
+    bm[40] = 0;
+    bm[41] = 0;
+
+    // vertical resolution of the image - pixels per meter (3780)
+    bm[42] = 0xc4;
+    bm[43] = 0x03;
+    bm[44] = 0;
+    bm[45] = 0;
+
+    // color palette information
+    for (int i = 46; i < 50; i++) bm[i] = 0;
+
+    // number of important colors
+    // if 0 then all colors are important
+    for (int i = 50; i < 54; i++) bm[i] = 0;
+  }
+
+  Future<void> stopPlayer() async {
+    if (_mPlayer != null) await _mPlayer.stopPlayer();
   }
 
   @override
   deactivate() {
+    stopPlayer();
+    _mPlayer.closeAudioSession();
+    _mPlayer = null;
     super.deactivate();
     if (_signaling != null) _signaling.close();
     if (_timer != null) {
@@ -43,48 +153,82 @@ class _DataChannelSampleState extends State<DataChannelSample> {
     }
   }
 
+  void feedHim(Uint8List data) {
+    if (_mPlayer.isStopped) {
+      _mPlayer.startPlayerFromStream(
+        codec: Codec.pcm16,
+        numChannels: 1,
+        sampleRate: sampleRate,
+      );
+    }
+    int start = 0;
+    int totalLength = data.length;
+    while (totalLength > 0 && _mPlayer != null && !_mPlayer.isStopped) {
+      int ln = totalLength > blockSize ? blockSize : totalLength;
+      _mPlayer.foodSink.add(FoodData(data.sublist(start, start + ln)));
+      totalLength -= ln;
+      start += ln;
+    }
+  }
+
+  void processBinary(Uint8List bin) {
+    if (bin[0] == 'A'.codeUnitAt(0) && bin[1] == 'U'.codeUnitAt(0)) //audio data
+      feedHim(bin.sublist(2, bin.length));
+    else {
+      //video data
+      // print("Compressed size: " + bin.length.toString());
+      bin = decoder.convert(bin);
+      print(bin[0].toString() + " " + bin[100].toString());
+      // print("Uncompressed size: " + bin.length.toString());
+      for (int i = 0; i < (width * height * 3); i++) bm[i + 54] = bin[i];
+      print(bm[54].toString() + " " + bin[154].toString());
+      print("------");
+    }
+  }
+
   void _connect() async {
     if (_signaling == null) {
-      _signaling = Signaling(widget.host)..connect();
+      _signaling = Signaling(serverIP)..connect();
 
-      _signaling.onDataChannelMessage = (_, dc, RTCDataChannelMessage data) {
+      _signaling.onDataChannelMessage = (dc, RTCDataChannelMessage data) {
         setState(() {
           if (data.isBinary) {
-            print('Got binary [' + data.binary.toString() + ']');
+            // processBinary(data.binary);
+            bin = data.binary;
+            if (bin[0] == 'A'.codeUnitAt(0) &&
+                bin[1] == 'U'.codeUnitAt(0)) //audio data
+              feedHim(bin.sublist(2, bin.length));
+            else {
+              //video data
+              bin = decoder.convert(bin);
+              bm = Uint8List.fromList(bm.sublist(0, 54) + bin);
+            }
           } else {
-            _text = data.text;
+            jsonbody = json.decode(data.text);
+            //need the width and height of the image
+            initBitmap(jsonbody["width"], jsonbody["height"]);
           }
         });
       };
 
-      _signaling.onDataChannel = (_, channel) {
+      _signaling.onDataChannel = (channel) {
         _dataChannel = channel;
       };
 
-      _signaling.onSignalingStateChange = (SignalingState state) {
+      _signaling.onStateChange = (SignalingState state) {
         switch (state) {
-          case SignalingState.ConnectionClosed:
-          case SignalingState.ConnectionError:
-          case SignalingState.ConnectionOpen:
-            break;
-        }
-      };
-
-      _signaling.onCallStateChange = (Session session, CallState state) {
-        switch (state) {
-          case CallState.CallStateNew:
+          case SignalingState.CallStateNew:
             {
-              setState(() {
-                _session = session;
+              this.setState(() {
                 _inCalling = true;
               });
-              _timer =
-                  Timer.periodic(Duration(seconds: 1), _handleDataChannelTest);
+              //_timer =
+              //    Timer.periodic(Duration(seco//Image.memory(bytes),nds: 1), _handleDataChannelTest);
               break;
             }
-          case CallState.CallStateBye:
+          case SignalingState.CallStateBye:
             {
-              setState(() {
+              this.setState(() {
                 _inCalling = false;
               });
               if (_timer != null) {
@@ -92,19 +236,21 @@ class _DataChannelSampleState extends State<DataChannelSample> {
                 _timer = null;
               }
               _dataChannel = null;
-              _inCalling = false;
-              _session = null;
               _text = '';
               break;
             }
-          case CallState.CallStateInvite:
-          case CallState.CallStateConnected:
-          case CallState.CallStateRinging:
+          case SignalingState.CallStateInvite:
+          case SignalingState.CallStateConnected:
+          case SignalingState.CallStateRinging:
+          case SignalingState.ConnectionClosed:
+          case SignalingState.ConnectionError:
+          case SignalingState.ConnectionOpen:
+            break;
         }
       };
 
       _signaling.onPeersUpdate = ((event) {
-        setState(() {
+        this.setState(() {
           _selfId = event['self'];
           _peers = event['peers'];
         });
@@ -112,28 +258,9 @@ class _DataChannelSampleState extends State<DataChannelSample> {
     }
   }
 
-  _handleDataChannelTest(Timer timer) async {
-    if (_dataChannel != null) {
-      String text = 'Say hello ' +
-          timer.tick.toString() +
-          ' times, from [' +
-          _selfId +
-          ']';
-      _dataChannel
-          .send(RTCDataChannelMessage.fromBinary(Uint8List(timer.tick + 1)));
-      _dataChannel.send(RTCDataChannelMessage(text));
-    }
-  }
-
   _invitePeer(context, peerId) async {
     if (_signaling != null && peerId != _selfId) {
       _signaling.invite(peerId, 'data', false);
-    }
-  }
-
-  _hangUp() {
-    if (_signaling != null) {
-      _signaling.bye(_session.sid);
     }
   }
 
@@ -154,29 +281,24 @@ class _DataChannelSampleState extends State<DataChannelSample> {
 
   @override
   Widget build(BuildContext context) {
+    FocusScope.of(context).requestFocus(focusNode);
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Data Channel Sample'),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: null,
-            tooltip: 'setup',
-          ),
-        ],
-      ),
-      floatingActionButton: _inCalling
-          ? FloatingActionButton(
-              onPressed: _hangUp,
-              tooltip: 'Hangup',
-              child: Icon(Icons.call_end),
-            )
-          : null,
       body: _inCalling
-          ? Center(
-              child: Container(
-                child: Text('Recevied => ' + _text),
-              ),
+          ? ListView(
+              children: [
+                Container(child: Image.memory(bm)),
+                RawKeyboardListener(
+                    autofocus: true,
+                    focusNode: focusNode,
+                    onKey: (RawKeyEvent event) {
+                      if (event.runtimeType.toString() == "RawKeyDownEvent") {
+                        print(event.data.logicalKey.keyLabel);
+                        _dataChannel.send(RTCDataChannelMessage(
+                            event.data.logicalKey.keyLabel));
+                      }
+                    },
+                    child: TextField())
+              ],
             )
           : ListView.builder(
               shrinkWrap: true,
