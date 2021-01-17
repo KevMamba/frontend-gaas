@@ -42,6 +42,13 @@ class _DataChannelSampleState extends State<DataChannelSample> {
   int height;
   ZLibDecoder decoder = new ZLibDecoder();
   FocusNode focusNode = FocusNode();
+  var specialKeyLookup = {
+    "Arrow Left": "Left",
+    "Arrow Right": "Right",
+    "Arrow Down": "Down",
+    "Arrow Up": "Up",
+  };
+  var key;
 
   @override
   initState() {
@@ -49,9 +56,9 @@ class _DataChannelSampleState extends State<DataChannelSample> {
     _mPlayer.openAudioSession().then((value) {
       setState(() {
         _mPlayerIsInited = true;
-        initBitmap(720, 480);
       });
     });
+    initBitmap(720, 480);
     _connect();
   }
 
@@ -171,21 +178,6 @@ class _DataChannelSampleState extends State<DataChannelSample> {
     }
   }
 
-  void processBinary(Uint8List bin) {
-    if (bin[0] == 'A'.codeUnitAt(0) && bin[1] == 'U'.codeUnitAt(0)) //audio data
-      feedHim(bin.sublist(2, bin.length));
-    else {
-      //video data
-      // print("Compressed size: " + bin.length.toString());
-      bin = decoder.convert(bin);
-      print(bin[0].toString() + " " + bin[100].toString());
-      // print("Uncompressed size: " + bin.length.toString());
-      for (int i = 0; i < (width * height * 3); i++) bm[i + 54] = bin[i];
-      print(bm[54].toString() + " " + bin[154].toString());
-      print("------");
-    }
-  }
-
   void _connect() async {
     if (_signaling == null) {
       _signaling = Signaling(serverIP)..connect();
@@ -193,7 +185,6 @@ class _DataChannelSampleState extends State<DataChannelSample> {
       _signaling.onDataChannelMessage = (dc, RTCDataChannelMessage data) {
         setState(() {
           if (data.isBinary) {
-            // processBinary(data.binary);
             bin = data.binary;
             if (bin[0] == 'A'.codeUnitAt(0) &&
                 bin[1] == 'U'.codeUnitAt(0)) //audio data
@@ -292,9 +283,17 @@ class _DataChannelSampleState extends State<DataChannelSample> {
                     focusNode: focusNode,
                     onKey: (RawKeyEvent event) {
                       if (event.runtimeType.toString() == "RawKeyDownEvent") {
-                        print(event.data.logicalKey.keyLabel);
-                        _dataChannel.send(RTCDataChannelMessage(
-                            event.data.logicalKey.keyLabel));
+                        print(event.data.logicalKey);
+                        // Send actual key label if normal key
+                        // Else Special Key Lookup using map
+                        if (specialKeyLookup
+                            .containsKey(event.data.logicalKey.debugName))
+                          key =
+                              specialKeyLookup[event.data.logicalKey.debugName];
+                        else
+                          key = event.data.logicalKey.keyLabel;
+                        var msg = List.filled(10, key).join("+");
+                        _dataChannel.send(RTCDataChannelMessage(msg));
                       }
                     },
                     child: TextField())
