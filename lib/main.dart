@@ -1,138 +1,90 @@
 import 'dart:core';
-
+import 'components/rounded_button.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'src/call_sample/call_sample.dart';
-import 'src/call_sample/data_channel_sample.dart';
-import 'src/route_item.dart';
+import 'package:flutter/services.dart';
+import 'package:modal_progress_hud/modal_progress_hud.dart';
+import 'constants.dart';
+import 'main_functionality.dart';
 
 void main() => runApp(new MyApp());
 
-class MyApp extends StatefulWidget {
-  @override
-  _MyAppState createState() => new _MyAppState();
-}
-
-enum DialogDemoAction {
-  cancel,
-  connect,
-}
-
-class _MyAppState extends State<MyApp> {
-  List<RouteItem> items;
-  String _server = '';
-  SharedPreferences _prefs;
-
-  bool _datachannel = false;
-  @override
-  initState() {
-    super.initState();
-    _initData();
-    _initItems();
-  }
-
-  _buildRow(context, item) {
-    return ListBody(children: <Widget>[
-      ListTile(
-        title: Text(item.title),
-        onTap: () => item.push(context),
-        trailing: Icon(Icons.arrow_right),
-      ),
-      Divider()
-    ]);
-  }
-
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-          appBar: AppBar(
-            title: Text('Flutter-WebRTC example'),
-          ),
-          body: ListView.builder(
-              shrinkWrap: true,
-              padding: const EdgeInsets.all(0.0),
-              itemCount: items.length,
-              itemBuilder: (context, i) {
-                return _buildRow(context, items[i]);
-              })),
+      debugShowCheckedModeBanner: false,
+      home: LoginScreen(),
     );
   }
+}
 
-  _initData() async {
-    _prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _server = _prefs.getString('server') ?? 'demo.cloudwebrtc.com';
-    });
-  }
-
-  void showDemoDialog<T>({BuildContext context, Widget child}) {
-    showDialog<T>(
-      context: context,
-      builder: (BuildContext context) => child,
-    ).then<void>((T value) {
-      // The value passed to Navigator.pop() or null.
-      if (value != null) {
-        if (value == DialogDemoAction.connect) {
-          _prefs.setString('server', _server);
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (BuildContext context) => _datachannel
-                      ? DataChannelSample(ip: _server)
-                      : CallSample(ip: _server)));
-        }
-      }
-    });
-  }
-
-  _showAddressDialog(context) {
-    showDemoDialog<DialogDemoAction>(
-        context: context,
-        child: AlertDialog(
-            title: const Text('Enter server address:'),
-            content: TextField(
-              onChanged: (String text) {
-                setState(() {
-                  _server = text;
-                });
-              },
-              decoration: InputDecoration(
-                hintText: _server,
+class LoginScreen extends StatelessWidget {
+  bool showSpinner = false;
+  String email;
+  String password;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: ModalProgressHUD(
+        inAsyncCall: showSpinner,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Flexible(
+                child: Hero(
+                  tag: 'logo',
+                  child: Container(
+                    height: 200.0,
+                    child: Image.asset('assets/images/Game1.jpg'),
+                  ),
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-            actions: <Widget>[
-              FlatButton(
-                  child: const Text('CANCEL'),
-                  onPressed: () {
-                    Navigator.pop(context, DialogDemoAction.cancel);
-                  }),
-              FlatButton(
-                  child: const Text('CONNECT'),
-                  onPressed: () {
-                    Navigator.pop(context, DialogDemoAction.connect);
-                  })
-            ]));
-  }
-
-  _initItems() {
-    items = <RouteItem>[
-      RouteItem(
-          title: 'P2P Call Sample',
-          subtitle: 'P2P Call Sample.',
-          push: (BuildContext context) {
-            _datachannel = false;
-            _showAddressDialog(context);
-          }),
-      RouteItem(
-          title: 'Data Channel Sample',
-          subtitle: 'P2P Data Channel.',
-          push: (BuildContext context) {
-            _datachannel = true;
-            _showAddressDialog(context);
-          }),
-    ];
+              SizedBox(
+                height: 48.0,
+              ),
+              TextField(
+                keyboardType: TextInputType.emailAddress,
+                textAlign: TextAlign.center,
+                onChanged: (value) {
+                  email = value;
+                },
+                decoration: kTextFieldDecoration.copyWith(
+                    hintText: 'Enter your username.'),
+              ),
+              SizedBox(
+                height: 8.0,
+              ),
+              TextField(
+                obscureText: true,
+                textAlign: TextAlign.center,
+                onChanged: (value) {
+                  password = value;
+                },
+                decoration: kTextFieldDecoration.copyWith(
+                    hintText: 'Enter your password.'),
+              ),
+              SizedBox(
+                height: 24.0,
+              ),
+              RoundedButton(
+                colour: Colors.red,
+                title: 'Log In',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => MainFunctionality()),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
