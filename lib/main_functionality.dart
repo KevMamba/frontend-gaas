@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'src/call_sample/call_sample.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'src/call_sample/data_channel_sample.dart';
 import 'src/route_item.dart';
 
@@ -22,6 +23,13 @@ class _MainFunctionalityState extends State<MainFunctionality> {
   String _server = '';
   SharedPreferences _prefs;
 
+  List<Image> images = [
+    Image.asset('assets/images/Game1.jpg'),
+    Image.asset('assets/images/Emerald.jpg'),
+    Image.asset('assets/images/Mario.jpg'),
+    Image.asset('assets/images/Sonic.jpg'),
+  ];
+
   bool _datachannel = false;
   @override
   initState() {
@@ -34,6 +42,15 @@ class _MainFunctionalityState extends State<MainFunctionality> {
     return ListBody(children: <Widget>[
       ListTile(
         title: Text(item.title),
+        leading: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: 64,
+            minHeight: 104,
+            maxWidth: 124,
+            maxHeight: 154,
+          ),
+          child: item.image,
+        ),
         onTap: () => item.push(context),
         trailing: Icon(Icons.arrow_right),
       ),
@@ -43,18 +60,47 @@ class _MainFunctionalityState extends State<MainFunctionality> {
 
   @override
   Widget build(BuildContext context) {
+    int _currentIndex = 0;
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
           appBar: AppBar(
-            title: Text('Flutter-WebRTC example'),
+            backgroundColor: Colors.red,
+            title: Center(child: Text('Gaming as a Service 🎮')),
           ),
-          body: ListView.builder(
-              shrinkWrap: true,
-              padding: const EdgeInsets.all(0.0),
-              itemCount: items.length,
-              itemBuilder: (context, i) {
-                return _buildRow(context, items[i]);
-              })),
+          body: Column(
+            children: [
+              CarouselSlider(
+                  items: images,
+                  options: CarouselOptions(
+                    height: 250,
+                    aspectRatio: 16 / 9,
+                    viewportFraction: 0.8,
+                    initialPage: 0,
+                    enableInfiniteScroll: true,
+                    reverse: false,
+                    autoPlay: true,
+                    autoPlayInterval: Duration(seconds: 3),
+                    autoPlayAnimationDuration: Duration(milliseconds: 800),
+                    autoPlayCurve: Curves.fastOutSlowIn,
+                    enlargeCenterPage: true,
+                    onPageChanged: (index, reason) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    scrollDirection: Axis.horizontal,
+                  )),
+              SizedBox(height: 25),
+              ListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.all(0.0),
+                  itemCount: items.length,
+                  itemBuilder: (context, i) {
+                    return _buildRow(context, items[i]);
+                  }),
+            ],
+          )),
     );
   }
 
@@ -118,15 +164,33 @@ class _MainFunctionalityState extends State<MainFunctionality> {
   _initItems() {
     items = <RouteItem>[
       RouteItem(
-          title: 'P2P Call Sample',
+          title: 'Video Call',
           subtitle: 'P2P Call Sample.',
+          image: Image.asset('assets/images/video-call.jpg', fit: BoxFit.cover),
           push: (BuildContext context) {
             _datachannel = false;
             _showAddressDialog(context);
           }),
       RouteItem(
-          title: 'Data Channel Sample',
-          subtitle: 'P2P Data Channel.',
+          title: 'Pokemon Emerald',
+          subtitle: 'Data Channel Sample',
+          image: Image.asset('assets/images/Emerald.jpg', fit: BoxFit.cover),
+          push: (BuildContext context) {
+            _datachannel = true;
+            _showAddressDialog(context);
+          }),
+      RouteItem(
+          title: 'Super Mario Bros.',
+          subtitle: 'Data Channel Sample',
+          image: Image.asset('assets/images/Mario.jpg', fit: BoxFit.cover),
+          push: (BuildContext context) {
+            _datachannel = true;
+            _showAddressDialog(context);
+          }),
+      RouteItem(
+          title: 'Sonic Adventure',
+          subtitle: 'Data Channel Sample',
+          image: Image.asset('assets/images/Sonic.jpg', fit: BoxFit.cover),
           push: (BuildContext context) {
             _datachannel = true;
             _showAddressDialog(context);

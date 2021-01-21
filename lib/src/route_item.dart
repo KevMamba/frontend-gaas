@@ -7,10 +7,12 @@ class RouteItem {
   RouteItem({
     @required this.title,
     @required this.subtitle,
+    @required this.image,
     @required this.push,
   });
 
   final String title;
   final String subtitle;
+  final Image image;
   final RouteCallback push;
 }
