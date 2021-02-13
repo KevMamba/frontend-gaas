@@ -49,6 +49,7 @@ class _DataChannelSampleState extends State<DataChannelSample> {
     "Arrow Up": "Up",
   };
   var key;
+  RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
 
   @override
   initState() {
@@ -59,7 +60,12 @@ class _DataChannelSampleState extends State<DataChannelSample> {
       });
     });
     initBitmap(720, 480);
+    initRenderer();
     _connect();
+  }
+
+  initRenderer() async {
+    await _remoteRenderer.initialize();
   }
 
   void initBitmap(int jsonwidth, int jsonheight) {
@@ -158,6 +164,7 @@ class _DataChannelSampleState extends State<DataChannelSample> {
     if (_timer != null) {
       _timer.cancel();
     }
+    _remoteRenderer.dispose();
   }
 
   void feedHim(Uint8List data) {
@@ -220,6 +227,7 @@ class _DataChannelSampleState extends State<DataChannelSample> {
           case SignalingState.CallStateBye:
             {
               this.setState(() {
+                _remoteRenderer.srcObject = null;
                 _inCalling = false;
               });
               if (_timer != null) {
@@ -245,6 +253,10 @@ class _DataChannelSampleState extends State<DataChannelSample> {
           _selfId = event['self'];
           _peers = event['peers'];
         });
+      });
+
+      _signaling.onAddRemoteStream = ((stream) {
+        _remoteRenderer.srcObject = stream;
       });
     }
   }
@@ -278,6 +290,7 @@ class _DataChannelSampleState extends State<DataChannelSample> {
           ? ListView(
               children: [
                 Container(child: Image.memory(bm)),
+                // RTCVideoView(_remoteRenderer),
                 RawKeyboardListener(
                     autofocus: true,
                     focusNode: focusNode,
@@ -292,8 +305,7 @@ class _DataChannelSampleState extends State<DataChannelSample> {
                               specialKeyLookup[event.data.logicalKey.debugName];
                         else
                           key = event.data.logicalKey.keyLabel;
-                        var msg = List.filled(10, key).join("+");
-                        _dataChannel.send(RTCDataChannelMessage(msg));
+                        _dataChannel.send(RTCDataChannelMessage(key));
                       }
                     },
                     child: TextField())
