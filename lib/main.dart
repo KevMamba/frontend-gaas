@@ -6,7 +6,7 @@ import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'constants.dart';
 import 'main_functionality.dart';
 
-void main() => runApp(new MyApp());
+void main() => runApp(new MainFunctionality());
 
 class MyApp extends StatelessWidget {
   @override
@@ -65,7 +65,8 @@ class LoginScreen extends StatelessWidget {
                   password = value;
                 },
                 decoration: kTextFieldDecoration.copyWith(
-                    hintText: 'Enter your password.'),
+                  hintText: 'Enter your password.',
+                ),
               ),
               SizedBox(
                 height: 24.0,
