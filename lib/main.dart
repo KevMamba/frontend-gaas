@@ -6,7 +6,7 @@ import 'package:modal_progress_hud/modal_progress_hud.dart';
 import 'constants.dart';
 import 'main_functionality.dart';
 
-void main() => runApp(new MainFunctionality());
+void main() => runApp(new MyApp());
 
 class MyApp extends StatelessWidget {
   @override

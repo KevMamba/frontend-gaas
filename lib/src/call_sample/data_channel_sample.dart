@@ -274,6 +274,10 @@ class _DataChannelSampleState extends State<DataChannelSample> {
   Widget build(BuildContext context) {
     FocusScope.of(context).requestFocus(focusNode);
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Data Channel Sample'),
+        backgroundColor: Colors.red,
+      ),
       body: _inCalling
           ? ListView(
               children: [
