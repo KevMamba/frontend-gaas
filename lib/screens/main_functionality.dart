@@ -3,10 +3,10 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'src/call_sample/call_sample.dart';
+import '../src/call_sample/call_sample.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'src/call_sample/data_channel_sample.dart';
-import 'src/route_item.dart';
+import '../src/call_sample/data_channel_sample.dart';
+import '../src/route_item.dart';
 
 class MainFunctionality extends StatefulWidget {
   @override
