@@ -3,10 +3,10 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'src/call_sample/call_sample.dart';
+import '../src/call_sample/call_sample.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'src/call_sample/data_channel_sample.dart';
-import 'src/route_item.dart';
+import '../src/call_sample/data_channel_sample.dart';
+import '../src/route_item.dart';
 
 class MainFunctionality extends StatefulWidget {
   @override
@@ -20,7 +20,7 @@ enum DialogDemoAction {
 
 class _MainFunctionalityState extends State<MainFunctionality> {
   List<RouteItem> items;
-  String _server = '';
+  String _server = "";
   SharedPreferences _prefs;
 
   List<Image> images = [
@@ -31,6 +31,7 @@ class _MainFunctionalityState extends State<MainFunctionality> {
   ];
 
   bool _datachannel = false;
+
   @override
   initState() {
     super.initState();
@@ -121,11 +122,13 @@ class _MainFunctionalityState extends State<MainFunctionality> {
         if (value == DialogDemoAction.connect) {
           _prefs.setString('server', _server);
           Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (BuildContext context) => _datachannel
-                      ? DataChannelSample(ip: _server)
-                      : CallSample(ip: _server)));
+            context,
+            MaterialPageRoute(
+              builder: (context) => _datachannel
+                  ? DataChannelSample(ip: _server)
+                  : CallSample(ip: _server),
+            ),
+          );
         }
       }
     });
@@ -151,12 +154,14 @@ class _MainFunctionalityState extends State<MainFunctionality> {
               FlatButton(
                   child: const Text('CANCEL'),
                   onPressed: () {
-                    Navigator.pop(context, DialogDemoAction.cancel);
+                    Navigator.of(context, rootNavigator: true)
+                        .pop(DialogDemoAction.cancel);
                   }),
               FlatButton(
                   child: const Text('CONNECT'),
                   onPressed: () {
-                    Navigator.pop(context, DialogDemoAction.connect);
+                    Navigator.of(context, rootNavigator: true)
+                        .pop(DialogDemoAction.connect);
                   })
             ]));
   }
