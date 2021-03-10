@@ -107,17 +107,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           isApiCallProcess = false;
                         });
 
-                        if (value.token.isNotEmpty) {
+                        if (value.status.isNotEmpty) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => MainFunctionality()),
+                              builder: (context) => MainFunctionality(),
+                            ),
                           );
                           final snackBar =
                               SnackBar(content: Text("Login Successful"));
                           scaffoldKey.currentState.showSnackBar(snackBar);
                         } else {
-                          final snackBar = SnackBar(content: Text(value.error));
+                          final snackBar =
+                              SnackBar(content: Text("Login Error"));
                           scaffoldKey.currentState.showSnackBar(snackBar);
                         }
                       }

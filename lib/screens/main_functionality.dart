@@ -69,38 +69,40 @@ class _MainFunctionalityState extends State<MainFunctionality> {
             backgroundColor: Colors.red,
             title: Center(child: Text('Gaming as a Service 🎮')),
           ),
-          body: Column(
-            children: [
-              CarouselSlider(
-                  items: images,
-                  options: CarouselOptions(
-                    height: 250,
-                    aspectRatio: 16 / 9,
-                    viewportFraction: 0.8,
-                    initialPage: 0,
-                    enableInfiniteScroll: true,
-                    reverse: false,
-                    autoPlay: true,
-                    autoPlayInterval: Duration(seconds: 3),
-                    autoPlayAnimationDuration: Duration(milliseconds: 800),
-                    autoPlayCurve: Curves.fastOutSlowIn,
-                    enlargeCenterPage: true,
-                    onPageChanged: (index, reason) {
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                    },
-                    scrollDirection: Axis.horizontal,
-                  )),
-              SizedBox(height: 25),
-              ListView.builder(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.all(0.0),
-                  itemCount: items.length,
-                  itemBuilder: (context, i) {
-                    return _buildRow(context, items[i]);
-                  }),
-            ],
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                CarouselSlider(
+                    items: images,
+                    options: CarouselOptions(
+                      height: 250,
+                      aspectRatio: 16 / 9,
+                      viewportFraction: 0.8,
+                      initialPage: 0,
+                      enableInfiniteScroll: true,
+                      reverse: false,
+                      autoPlay: true,
+                      autoPlayInterval: Duration(seconds: 3),
+                      autoPlayAnimationDuration: Duration(milliseconds: 800),
+                      autoPlayCurve: Curves.fastOutSlowIn,
+                      enlargeCenterPage: true,
+                      onPageChanged: (index, reason) {
+                        setState(() {
+                          _currentIndex = index;
+                        });
+                      },
+                      scrollDirection: Axis.horizontal,
+                    )),
+                SizedBox(height: 25),
+                ListView.builder(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.all(0.0),
+                    itemCount: items.length,
+                    itemBuilder: (context, i) {
+                      return _buildRow(context, items[i]);
+                    }),
+              ],
+            ),
           )),
     );
   }

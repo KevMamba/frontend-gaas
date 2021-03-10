@@ -1,13 +1,13 @@
 class LoginResponseModel {
-  final String token;
-  final String error;
+  final String status;
+  // final String error;
 
-  LoginResponseModel({this.token, this.error});
+  LoginResponseModel({this.status});
 
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) {
     return LoginResponseModel(
-      token: json["token"] != null ? json["token"] : "",
-      error: json["error"] != null ? json["error"] : "",
+      status: json["status"] == "success" ? json["status"] : null,
+      //error: json["error"] != null ? json["error"] : "",
     );
   }
 }
