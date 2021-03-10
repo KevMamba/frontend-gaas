@@ -8,9 +8,7 @@ class APIService {
 
     final response = await http.post(url, body: requestModel.toJson());
     if (response.statusCode == 200 || response.statusCode == 400) {
-      return LoginResponseModel.fromJson(
-        response.headers,
-      );
+      return LoginResponseModel.fromJson(json.decode(response.body));
     } else {
       throw Exception('Failed to load data!');
     }
