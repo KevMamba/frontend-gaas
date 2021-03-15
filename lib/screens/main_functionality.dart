@@ -110,7 +110,8 @@ class _MainFunctionalityState extends State<MainFunctionality> {
   _initData() async {
     _prefs = await SharedPreferences.getInstance();
     setState(() {
-      _server = _prefs.getString('server') ?? 'demo.cloudwebrtc.com';
+      //_server = _prefs.getString('server') ?? 'demo.cloudwebrtc.com';
+      _server = "34.205.11.45";
     });
   }
 
@@ -140,27 +141,28 @@ class _MainFunctionalityState extends State<MainFunctionality> {
     showDemoDialog<DialogDemoAction>(
         context: context,
         child: AlertDialog(
-            title: const Text('Enter server address:'),
-            content: TextField(
-              onChanged: (String text) {
-                setState(() {
-                  _server = text;
-                });
-              },
-              decoration: InputDecoration(
-                hintText: _server,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            title: const Text('Would you like to play?'),
+            // content: TextField(
+            //   onChanged: (String text) {
+            //     setState(() {
+            //       _server = text;
+            //     });
+            //   },
+            //   decoration: InputDecoration(
+            //     hintText: _server,
+            //   ),
+            //   textAlign: TextAlign.center,
+            // ),
+            content: Image.asset('assets/images/Game1.jpg'),
             actions: <Widget>[
               FlatButton(
-                  child: const Text('CANCEL'),
+                  child: const Text('LATER'),
                   onPressed: () {
                     Navigator.of(context, rootNavigator: true)
                         .pop(DialogDemoAction.cancel);
                   }),
               FlatButton(
-                  child: const Text('CONNECT'),
+                  child: const Text('PLAY'),
                   onPressed: () {
                     Navigator.of(context, rootNavigator: true)
                         .pop(DialogDemoAction.connect);
